@@ -1,6 +1,38 @@
 ﻿@page "/"
+@using System.Text.Json;
+@using System.Data.Entity;
+@inject HttpClient Http
+@using Newtonsoft.Json;
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+<br>
+<label for="pokemon">Pokemon</label>
+<input @bind=@toSearch placeholder="ditto" name="pokemon" />
+<button @onclick="GetPokemon">GetPokemon</button>
 
+@foreach (JsonElement item in pokemons)
+{
+    @for (var i = 0; i < item.GetArrayLength(); i++)
+    {
+        <div>
+        <p>@item[i].GetProperty("name").GetString()</p>
+        @* <img src='@item[i].GetProperty("sprites")[0].GetString()'/> *@
+        </div>
+    }
+}
+
+@code {
+    private string toSearch;
+    private List<JsonElement> pokemons = new List<JsonElement>();
+    private string url = "https://pokeapi.co/api/v2/pokemon/";
+
+    private async Task GetPokemon()
+    {
+        var response = await Http.GetFromJsonAsync<JsonElement>(this.url);
+        this.url = response.GetProperty("next").GetString();
+        this.pokemons.Add(response.GetProperty("results"));
+        Console.WriteLine(response.GetProperty("results"));
+    }
+}
