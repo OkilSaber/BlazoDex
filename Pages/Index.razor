@@ -4,9 +4,10 @@
 @inject HttpClient Http
 @using Newtonsoft.Json;
 
+<label for="pokemon">Pokemon</label>
+<input @bind=@toSearch placeholder="ditto" name="pokemon" />
+<button type="button" @onclick="GetPokemonInfosFromName">Search</button>
 <div class="container">
-    <label for="pokemon">Pokemon</label>
-    <input @bind=@toSearch placeholder="ditto" name="pokemon" />
     @foreach (JsonElement pokemon in pokemons)
     {
         <div class="card">
@@ -20,7 +21,16 @@
             }
         </div>
     }
-    <button @onclick="GetAllPokemons">Show More</button>
+    @if (pokemons.Count > 1)
+    {
+        <button @onclick="GetAllPokemons">Show More</button>
+    }
+    else
+    {
+        <button
+        @onclick="@(() => { pokemons.Clear(); url = "https://pokeapi.co/api/v2/pokemon/"; GetAllPokemons(); toSearch = "";})">Show
+            All</button>
+    }
 </div>
 
 @code {
@@ -36,13 +46,20 @@
         Console.WriteLine(this.url);
         for (var i = 0; i < response.GetProperty("results").GetArrayLength(); i++)
         {
-            await GetPokemonInfos(response.GetProperty("results")[i]);
+            await GetPokemonInfosFromUrl(response.GetProperty("results")[i]);
+            Console.WriteLine("Hey");
         }
     }
 
-    private async Task GetPokemonInfos(JsonElement pokemon)
+    private async Task GetPokemonInfosFromUrl(JsonElement pokemon)
     {
         var response = await Http.GetFromJsonAsync<JsonElement>(pokemon.GetProperty("url").GetString());
+        this.pokemons.Add(response);
+    }
+    private async Task GetPokemonInfosFromName()
+    {
+        this.pokemons.Clear();
+        var response = await Http.GetFromJsonAsync<JsonElement>($"https://pokeapi.co/api/v2/pokemon/{this.toSearch}");
         this.pokemons.Add(response);
     }
     protected override async Task OnInitializedAsync()
